@@ -1,6 +1,6 @@
 namespace DefaultRotations.Ranged;
 
-[Rotation("Default", CombatType.PvE, GameVersion = "7.00",
+[Rotation("RabbsBard DubsysEdit", CombatType.PvE, GameVersion = "7.00",
     Description = "Please make sure that the three song times add up to 120 seconds, Wanderers default first song for now.")]
 [SourceCode(Path = "main/DefaultRotations/Ranged/BRD_Default.cs")]
 [Api(2)]
@@ -29,6 +29,8 @@ public sealed class BRD_Default : BardRotation
     private float WANDRemainTime => 45 - WANDTime;
     private float MAGERemainTime => 45 - MAGETime;
     private float ARMYRemainTime => 45 - ARMYTime;
+    public static IBaseAction St8Shot { get; } = new BaseAction((ActionID)98);
+    public static IBaseAction WideVfix { get; } = new BaseAction((ActionID)36974);
     #endregion
 
     #region oGCD Logic
@@ -42,7 +44,7 @@ public sealed class BRD_Default : BardRotation
         {
             if ((EmpyrealArrowPvE.Cooldown.IsCoolingDown && !EmpyrealArrowPvE.Cooldown.WillHaveOneChargeGCD(1) || !EmpyrealArrowPvE.EnoughLevel) && Repertoire != 3)
             {
-                if (!Player.HasStatus(true, StatusID.StraightShotReady) && BarragePvE.CanUse(out act)) return true;
+                if (!Player.HasStatus(true, StatusID.StraightShotReady)) return true;
             }
         }
 
@@ -52,7 +54,7 @@ public sealed class BRD_Default : BardRotation
     protected override bool AttackAbility(IAction nextGCD, out IAction? act)
     {
         act = null;
-        if (Song == Song.NONE)
+        if (Song == Song.NONE && InCombat)
         {
             switch (FirstSong)
             {
@@ -81,14 +83,20 @@ public sealed class BRD_Default : BardRotation
                 if (!BindWANDEnough) return true;
             }
 
+            
+
             if (RadiantFinalePvE.CanUse(out act, skipAoeCheck: true))
+                
+                
             {
                 if (Player.HasStatus(true, StatusID.RagingStrikes) && RagingStrikesPvE.Cooldown.ElapsedOneChargeAfterGCD(1)) return true;
             }
 
             if (BattleVoicePvE.CanUse(out act, skipAoeCheck: true))
             {
-                if (IsLastAction(true, RadiantFinalePvE)) return true;
+                if (nextGCD.IsTheSameTo(true, RadiantFinalePvE)) return true;
+
+                if (nextGCD.IsTheSameTo(true, RadiantEncorePvE)) return true;
 
                 if (Player.HasStatus(true, StatusID.RagingStrikes) && RagingStrikesPvE.Cooldown.ElapsedOneChargeAfterGCD(1)) return true;
             }
@@ -96,14 +104,14 @@ public sealed class BRD_Default : BardRotation
 
         if (RadiantFinalePvE.EnoughLevel && RadiantFinalePvE.Cooldown.IsCoolingDown && BattleVoicePvE.EnoughLevel && !BattleVoicePvE.Cooldown.IsCoolingDown) return false;
 
-        if (TheWanderersMinuetPvE.CanUse(out act))
+        if (TheWanderersMinuetPvE.CanUse(out act) && InCombat)
         {
             if (SongEndAfter(ARMYRemainTime) && (Song != Song.NONE || Player.HasStatus(true, StatusID.ArmysEthos))) return true;
         }
 
         if (Song != Song.NONE && EmpyrealArrowPvE.CanUse(out act)) return true;
 
-        if (PitchPerfectPvE.CanUse(out act))
+        if (PitchPerfectPvE.CanUse(out act, skipCastingCheck:true, skipAoeCheck:true, skipComboCheck:true))
         {
             if (SongEndAfter(3) && Repertoire > 0) return true;
 
@@ -112,13 +120,13 @@ public sealed class BRD_Default : BardRotation
             if (Repertoire == 2 && EmpyrealArrowPvE.Cooldown.WillHaveOneChargeGCD()) return true;
         }
 
-        if (MagesBalladPvE.CanUse(out act))
+        if (MagesBalladPvE.CanUse(out act) && InCombat)
         {
             if (Song == Song.WANDERER && SongEndAfter(WANDRemainTime) && Repertoire == 0) return true;
             if (Song == Song.ARMY && SongEndAfterGCD(2) && TheWanderersMinuetPvE.Cooldown.IsCoolingDown) return true;
         }
 
-        if (ArmysPaeonPvE.CanUse(out act))
+        if (ArmysPaeonPvE.CanUse(out act) && InCombat)
         {
             if (TheWanderersMinuetPvE.EnoughLevel && SongEndAfter(MAGERemainTime) && Song == Song.MAGE) return true;
             if (TheWanderersMinuetPvE.EnoughLevel && SongEndAfter(2) && MagesBalladPvE.Cooldown.IsCoolingDown && Song == Song.WANDERER) return true;
@@ -148,22 +156,26 @@ public sealed class BRD_Default : BardRotation
         {
             if (Player.HasStatus(true, StatusID.RagingStrikes) && Player.WillStatusEndGCD(1, 0, true, StatusID.RagingStrikes)) return true;
         }
+        
+        if (ResonantArrowPvE.CanUse(out act, skipAoeCheck:true) && Player.HasStatus(true, StatusID.ResonantArrowReady)) return true;
 
         if (CanUseApexArrow(out act)) return true;
-
+        if (RadiantEncorePvE.CanUse(out act, skipAoeCheck: true, skipCastingCheck: true, skipComboCheck: true, skipStatusProvideCheck: true) && Player.HasStatus(true, StatusID.RadiantEncoreReady)) return true;
         if (BlastArrowPvE.CanUse(out act, skipAoeCheck: true))
         {
             if (!Player.HasStatus(true, StatusID.RagingStrikes)) return true;
-            if (Player.HasStatus(true, StatusID.RagingStrikes) && BarragePvE.Cooldown.IsCoolingDown) return true;
+            if (Player.HasStatus(true, StatusID.RagingStrikes) && BarragePvE.CanUse(out act)) return true;
         }
 
-        if (ShadowbitePvE.CanUse(out act)) return true;
+        //aoe
+        if (ShadowbitePvE.CanUse(out act, skipCastingCheck: true, skipComboCheck: true) && Player.HasStatus(true, StatusID.HawksEye, StatusID.HawksEye_3861, StatusID.Barrage)) return true;
+        if (WideVfix.CanUse(out act, skipCastingCheck: true, skipComboCheck: true) && Player.HasStatus(true, StatusID.HawksEye, StatusID.HawksEye_3861, StatusID.Barrage)) return true;
         if (QuickNockPvE.CanUse(out act)) return true;
 
         if (WindbitePvE.CanUse(out act)) return true;
         if (VenomousBitePvE.CanUse(out act)) return true;
-
-        if (StraightShotPvE.CanUse(out act)) return true;
+        if (RefulgentArrowPvE.CanUse(out act, skipCastingCheck: true, skipComboCheck: true) && Player.HasStatus(true, StatusID.HawksEye, StatusID.HawksEye_3861, StatusID.Barrage)) return true;
+        if (St8Shot.CanUse(out act, skipCastingCheck:true,skipComboCheck:true, skipStatusProvideCheck:true, skipAoeCheck:true) && Player.HasStatus(true, StatusID.HawksEye, StatusID.HawksEye_3861, StatusID.Barrage)) return true;
         if (HeavyShotPvE.CanUse(out act)) return true;
 
         return base.GeneralGCD(out act);
@@ -201,6 +213,12 @@ public sealed class BRD_Default : BardRotation
         bool isEmpyrealSoon = !EmpyrealArrowPvE.Cooldown.WillHaveOneChargeGCD();
         bool isEmpyrealLevel = !EmpyrealArrowPvE.EnoughLevel;
         bool isRepertoire = Repertoire != 3;
+
+        if (HeartbreakShotPvE.CanUse(out act, usedUp: true))
+        {
+            if (isBattleVoice || isRadiantFinale || (isRagingSoon && (isBloodTrait || isNoBloodTrait))) return false;
+            if (isEmpyrealArrowCD || isEmpyrealSoon || isEmpyrealLevel || isRepertoire) return true;
+        }
 
         if (RainOfDeathPvE.CanUse(out act, usedUp: true))
         {
