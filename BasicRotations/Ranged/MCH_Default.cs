@@ -77,12 +77,11 @@ public sealed class MCH_Default : MachinistRotation
         if (IsBurst)
         {
             if (UseBurstMedicine(out act)) return true;
-
+        }
             {
                 if ((IsLastAbility(false, HyperchargePvE) || Heat >= 50 || Player.HasStatus(true, StatusID.Hypercharged)) && !CombatElapsedLessGCD(5) &&
                     (CombatElapsedLess(20) || ToolChargeSoon(out _)) && !LowLevelHyperCheck && WildfirePvE.CanUse(out act)) return true;
             }
-        }
         // Use Hypercharge if at least 12 seconds of combat and (if wildfire will not be up in 30 seconds or if you hit 100 heat)
         if (!LowLevelHyperCheck && !CombatElapsedLess(12) && !Player.HasStatus(true, StatusID.Reassembled) && (!WildfirePvE.Cooldown.WillHaveOneCharge(30) || (Heat == 100)))
         {

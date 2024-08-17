@@ -1,6 +1,6 @@
 namespace DefaultRotations.Melee;
 
-[Rotation("Default", CombatType.PvE, GameVersion = "7.01")]
+[Rotation("DefaultKong", CombatType.PvE, GameVersion = "7.01")]
 [SourceCode(Path = "main/DefaultRotations/Melee/DRG_Default.cs")]
 [Api(3)]
 
@@ -56,6 +56,8 @@ public sealed class DRG_Default : DragoonRotation
             }
 
             if (LanceChargePvE.CanUse(out act)) return true;
+
+            if (UseBurstMedicine(out act)) return true;
 
             if (BattleLitanyPvE.CanUse(out act)) return true;
         }
